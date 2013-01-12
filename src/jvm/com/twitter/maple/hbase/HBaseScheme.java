@@ -12,7 +12,20 @@
 
 package com.twitter.maple.hbase;
 
-import com.twitter.maple.hbase.mapred.TableInputFormat;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapred.TableOutputFormat;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.mapred.JobConf;
+import org.apache.hadoop.mapred.OutputCollector;
+import org.apache.hadoop.mapred.RecordReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import cascading.flow.FlowProcess;
 import cascading.scheme.Scheme;
@@ -23,21 +36,8 @@ import cascading.tuple.Fields;
 import cascading.tuple.Tuple;
 import cascading.tuple.TupleEntry;
 import cascading.util.Util;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapred.TableOutputFormat;
-import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.mapred.JobConf;
-import org.apache.hadoop.mapred.OutputCollector;
-import org.apache.hadoop.mapred.RecordReader;
-import org.mortbay.log.Log;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashSet;
+import com.twitter.maple.hbase.mapred.TableInputFormat;
 
 /**
  * The HBaseScheme class is a {@link Scheme} subclass. It is used in conjunction with the {@HBaseTap} to
@@ -114,6 +114,21 @@ public class HBaseScheme
     validate();
 
     setSourceSink(this.keyField, this.valueFields);
+  }
+
+  private static final Fields cleanCascalogVars(final Fields fields) {
+    if (null == fields || 0 == fields.size()) return fields;
+
+    String[] out = new String[fields.size()];
+    for (int i = 0; i < fields.size(); i++) {
+      String s = (String) fields.get(i);
+      while (s.startsWith("?") || s.startsWith("!")) {
+        s = s.substring(1);
+      }
+      LOG.debug(String.format("Cleaned %s to %s.", fields.get(i), s));
+      out[i] = s;
+    }
+    return new Fields(out);
   }
 
   private void validate() {
@@ -241,6 +256,12 @@ public class HBaseScheme
   public void sourceConfInit(FlowProcess<JobConf> process,
       Tap<JobConf, RecordReader, OutputCollector> tap, JobConf conf) {
     conf.setInputFormat(TableInputFormat.class);
+
+    if (conf.getBoolean("cascading.hbase.cascalogsafe", false)) {
+      this.keyField = cleanCascalogVars(this.keyField);
+      for (int i = 0; i < this.valueFields.length; i++)
+        this.valueFields[i] = cleanCascalogVars(this.valueFields[i]);
+    }
 
     String columns = getColumns();
     LOG.debug("sourcing from columns: {}", columns);
