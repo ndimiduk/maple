@@ -4,19 +4,17 @@ A collection of useful Cascading taps.
 
 ## Building
 
-Maple uses [Leiningen 1.X](https://github.com/technomancy/leiningen/) to build. (Again, not yet compatible with Lein 2.x)
+Maple uses [Leiningen](http://leiningen.org/) to build. Build the jar
+and install it locally with:
 
-1. lein deps
-2. lein compile
-3. lein uberjar
-
-The above should build a jar with all dependencies. 
+    $ lein do deps, compile, install
 
 ## Usage
 
-Maple is hosted on [Conjars](http://conjars.org/com.twitter/maple).
-We expect most users will pull "com.twitter/maple" with the version they need. If you are submitting a patch, you will
-need to follow the above steps in Building.
+Maple is hosted on [Conjars](http://conjars.org/com.twitter/maple). We
+expect most users will pull "com.twitter/maple" with the version they
+need. If you are submitting a patch, you will need to follow the above
+steps in Building.
 
 ## License
 
